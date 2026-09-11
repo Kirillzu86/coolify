@@ -29,13 +29,20 @@ export default function App() {
   const [submitting, setSubmitting] = useState(false)
 
   // Fetch health status
+
   const fetchHealth = async () => {
     setHealthLoading(true)
     setHealthError(null)
     try {
-      const res = await fetch('/api/health/')
+      let res = await fetch('/api/health/')
       if (!res.ok) {
-        throw new Error(`HTTP ${res.status}: ${res.statusText}`)
+        // Fallback to direct backend URL if proxy fails
+        const directRes = await fetch('http://api.172.27.61.103.sslip.io/api/health/')
+        if (directRes.ok) {
+          res = directRes
+        } else {
+          throw new Error(`HTTP ${res.status}: ${res.statusText}`)
+        }
       }
       const data: HealthData = await res.json()
       setHealth(data)
@@ -49,7 +56,10 @@ export default function App() {
   // Fetch demo messages
   const fetchMessages = async () => {
     try {
-      const res = await fetch('/api/messages/')
+      let res = await fetch('/api/messages/')
+      if (!res.ok) {
+        res = await fetch('http://api.172.27.61.103.sslip.io/api/messages/')
+      }
       if (res.ok) {
         const data = await res.json()
         setMessages(data.results || [])
@@ -70,13 +80,20 @@ export default function App() {
 
     setSubmitting(true)
     try {
-      const res = await fetch('/api/messages/', {
+      let res = await fetch('/api/messages/', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: newMessage.trim() }),
       })
+
+      if (!res.ok) {
+        // Fallback directly to API domain
+        res = await fetch('http://api.172.27.61.103.sslip.io/api/messages/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: newMessage.trim() }),
+        })
+      }
 
       if (res.ok) {
         setNewMessage('')
@@ -91,6 +108,7 @@ export default function App() {
       setSubmitting(false)
     }
   }
+
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
