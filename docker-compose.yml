@@ -1,0 +1,40 @@
+services:
+  # Resource 1: Backend (Django + DRF + Gunicorn)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: coolify_backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-django-insecure-coolify-secret-key-1234567890}
+      - DJANGO_DEBUG=${DJANGO_DEBUG:-True}
+      - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS:-172.27.61.103.sslip.io,api.172.27.61.103.sslip.io,localhost,127.0.0.1,backend}
+      - DJANGO_CSRF_TRUSTED_ORIGINS=${DJANGO_CSRF_TRUSTED_ORIGINS:-http://172.27.61.103.sslip.io,http://api.172.27.61.103.sslip.io,http://localhost,http://127.0.0.1}
+      - CORS_ALLOW_ALL=True
+    networks:
+      - coolify-net
+
+  # Resource 2: Frontend & Nginx Gateway (React + TS + Nginx)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: coolify_frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    environment:
+      # Address of the backend resource
+      - BACKEND_URL=http://backend:8000
+    depends_on:
+      - backend
+    networks:
+      - coolify-net
+
+networks:
+  coolify-net:
+    driver: bridge
+

@@ -1,0 +1,3 @@
+"""
+Django core package initialization.
+"""
