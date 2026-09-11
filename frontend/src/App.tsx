@@ -28,21 +28,20 @@ export default function App() {
   const [newMessage, setNewMessage] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  // Fetch health status
+  // Determine API base URL:
+  // Direct domain on port 80 in production, or /api proxy in local development
+  const API_BASE = typeof window !== 'undefined' && window.location.hostname.includes('172.27.61.103')
+    ? 'http://api.172.27.61.103.sslip.io/api'
+    : '/api'
 
+  // Fetch health status
   const fetchHealth = async () => {
     setHealthLoading(true)
     setHealthError(null)
     try {
-      let res = await fetch('/api/health/')
+      const res = await fetch(`${API_BASE}/health/`)
       if (!res.ok) {
-        // Fallback to direct backend URL if proxy fails
-        const directRes = await fetch('http://api.172.27.61.103.sslip.io/api/health/')
-        if (directRes.ok) {
-          res = directRes
-        } else {
-          throw new Error(`HTTP ${res.status}: ${res.statusText}`)
-        }
+        throw new Error(`HTTP ${res.status}: ${res.statusText}`)
       }
       const data: HealthData = await res.json()
       setHealth(data)
@@ -56,10 +55,7 @@ export default function App() {
   // Fetch demo messages
   const fetchMessages = async () => {
     try {
-      let res = await fetch('/api/messages/')
-      if (!res.ok) {
-        res = await fetch('http://api.172.27.61.103.sslip.io/api/messages/')
-      }
+      const res = await fetch(`${API_BASE}/messages/`)
       if (res.ok) {
         const data = await res.json()
         setMessages(data.results || [])
@@ -80,20 +76,11 @@ export default function App() {
 
     setSubmitting(true)
     try {
-      let res = await fetch('/api/messages/', {
+      const res = await fetch(`${API_BASE}/messages/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: newMessage.trim() }),
       })
-
-      if (!res.ok) {
-        // Fallback directly to API domain
-        res = await fetch('http://api.172.27.61.103.sslip.io/api/messages/', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: newMessage.trim() }),
-        })
-      }
 
       if (res.ok) {
         setNewMessage('')
@@ -108,6 +95,7 @@ export default function App() {
       setSubmitting(false)
     }
   }
+
 
 
   return (
